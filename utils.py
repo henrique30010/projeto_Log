@@ -1,7 +1,8 @@
-#utils
+# utils
 
 from itertools import combinations
 import numpy as np
+
 
 def generate_abductive_reasons(explainer, X_binary, y_pred, x_idx, max_tam):
     n_features = X_binary.shape[1]
@@ -12,6 +13,7 @@ def generate_abductive_reasons(explainer, X_binary, y_pred, x_idx, max_tam):
                 valid_reasons.append(term_indices)
         return valid_reasons
 
+
 def filter_minimal_reasons(reasons):
     minimal = []
     for i in reasons:
@@ -19,6 +21,8 @@ def filter_minimal_reasons(reasons):
             minimal.append(i)
     return minimal
 
-#calcula o peso de uma razão // menor peso total = razão preferida
+# calcula o peso de uma razão // menor peso total = razão preferida
+
+
 def weight(reasons, weights):
     return sum(weights[i] for i in reason)
