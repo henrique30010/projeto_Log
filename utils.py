@@ -2,6 +2,7 @@ from itertools import combinations
 import numpy as np
 from z3 import *
 
+
 def generate_abductive_reasons_z3(explainer, X_binary, y_pred, x_idx, max_tam):
     n_features = X_binary.shape[1]
     valid_reasons = []
@@ -21,6 +22,6 @@ def filter_minimal_reasons(reasons):
             minimal.append(i)
     return minimal
 
+
 def weight(reason, weights):
     return sum(weights[i] for i in reason)
-
