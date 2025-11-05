@@ -83,3 +83,113 @@ class AbductiveExplanationZ3:
                 return False
         
         return True
+    
+    def find_kanchored_explanation(self, x_idx, X_binary, y_pred, 
+                                reference_indices, k=1, timeout=60):
+
+        ctx = Context()
+        set_param('smt.random_seed', 42)
+        
+        start_time = time.time()
+        n_features = X_binary.shape[1]
+        
+        positive_refs = [i for i in reference_indices if y_pred[i] == y_pred[x_idx]]
+        negative_refs = [i for i in reference_indices if y_pred[i] != y_pred[x_idx]]
+        
+        if len(positive_refs) == 0:
+            return None, 0
+        
+        #  variáveis Z3
+        s_vars = self._create_selector_vars(ctx, n_features)
+        p_vars = self._create_coverage_vars(ctx, len(positive_refs))
+        
+        # CNF
+        formula = self._build_cnf_formula(ctx, s_vars, p_vars, X_binary, X_binary,
+                                            y_pred, x_idx, k, positive_refs, negative_refs)
+        
+        solver = Solver(ctx=ctx)
+        solver.set('timeout', int(timeout * 1000))
+        solver.add(formula)
+        
+        # CEGAR
+        iteration = 0
+        blocked_terms = []
+        
+        while time.time() - start_time < timeout:
+            iteration += 1
+            self.solver_calls += 1
+            
+            result = solver.check()
+            
+            if result == unsat:
+                if blocked_terms:
+                    return None, 0
+                else:
+                    return None, 0
+            
+            elif result == unknown:
+                return None, "timeout"
+            
+            else:  # sat
+                model = solver.model()
+                
+                # Extrai o termo do modelo
+                term_indices = set()
+                for i, s_var in enumerate(s_vars):
+                    if model.eval(s_var, model_completion=True):
+                        term_indices.add(i)
+                
+                # Conta referências cobertas
+                covered_count = 0
+                covers_negative = False
+                
+                for ref_idx in positive_refs:
+                    if all(X_binary[ref_idx, i] == 1 for i in term_indices):
+                        covered_count += 1
+                
+                for ref_idx in negative_refs:
+                    if all(X_binary[ref_idx, i] == 1 for i in term_indices):
+                        covers_negative = True
+                        break
+                
+                # Verifica se é uma explicação válida
+                if not covers_negative and self._verify_explanation(ctx, term_indices, 
+                                                                        X_binary, y_pred, x_idx):
+                    if covered_count >= k:
+                        return sorted(list(term_indices)), covered_count
+                
+                # Bloqueia este termo (refinement phase)
+                blocking_clause = Or([s_vars[i] for i in range(n_features) if i not in term_indices])
+                solver.add(blocking_clause)
+                blocked_terms.append(term_indices)
+        
+        return None, "timeout"
+    
+    def find_most_anchored_explanation(self, x_idx, X_binary, y_pred,
+                                       reference_indices, timeout=60):
+        
+        start_time = time.time()
+        best_explanation = None
+        best_k = 0
+        k = 1
+        
+        while time.time() - start_time < timeout:
+            remaining_time = timeout - (time.time() - start_time)
+            if remaining_time < 1:
+                break
+            
+            explanation, anchor_count = self.find_kanchored_explanation(
+                x_idx, X_binary, y_pred, reference_indices, 
+                k=k, timeout=remaining_time
+            )
+            
+            if explanation is None:
+                if best_explanation is not None:
+                    return best_explanation, best_k
+                break
+            
+            best_explanation = explanation
+            best_k = anchor_count
+            k = anchor_count + 1
+        
+        return best_explanation, best_k
