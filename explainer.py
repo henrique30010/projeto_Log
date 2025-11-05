@@ -158,7 +158,7 @@ class AbductiveExplanationZ3:
                     if covered_count >= k:
                         return sorted(list(term_indices)), covered_count
                 
-                # Bloqueia este termo (refinement phase)
+                # Refinamento bloqueia termo 
                 blocking_clause = Or([s_vars[i] for i in range(n_features) if i not in term_indices])
                 solver.add(blocking_clause)
                 blocked_terms.append(term_indices)
