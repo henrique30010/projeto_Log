@@ -123,9 +123,9 @@ class AbductiveExplanationZ3:
             
             if result == unsat:
                 if blocked_terms:
-                    return None, 0
+                    return None, "refinement"
                 else:
-                    return None, 0
+                    return None, "unsat"
             
             elif result == unknown:
                 return None, "timeout"
