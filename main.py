@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.datasets import load_breast_cancer, load_wine
-
 from _experiment import run_experiments
+from analysis import run_analysis  
 
 if __name__ == "__main__":
     print("Carregando datasets...")
@@ -14,16 +14,17 @@ if __name__ == "__main__":
         ("wine", wine.data, (wine.target == 0).astype(int)),
     ]
     
+    
     results = run_experiments(datasets_config, max_samples=150)
     
+    
     print("\n" + "="*70)
-    print("RESUMO DOS RESULTADOS")
+    print("resumo dos resultados")
     print("="*70)
-    summary = results.groupby('dataset').agg({
-        'successful': 'mean',
-        'timeouts': 'mean',
-        'avg_anchors': 'mean',
-        'avg_time': 'mean',
-        'avg_solver_calls': 'mean'
-    })
-    print(summary)
+    print(results.groupby('dataset').mean())
+    
+    
+    print("\n" + "="*70)
+    print("análise dos resultados")
+    print("="*70)
+    run_analysis(results)
