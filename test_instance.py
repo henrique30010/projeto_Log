@@ -20,23 +20,24 @@ def test_single_instance():
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    
+    #seleciona a instância 
     x_idx = 0  # você pode mudar o índice aqui
     print(f"\nInstância selecionada: {x_idx}")
 
-    
+    #treina um modelo random forest
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_scaled, y)
     y_pred = model.predict(X_scaled)
 
-    
+    #gera o explicador
     explainer = AbductiveExplanationZ3(model)
     X_binary, _ = explainer._binarize_features(X_scaled)
 
+    #define índices de referência (aqui, selecionamos 10 aleatoriamente)
     reference_indices = np.random.choice(len(X_binary), 10, replace=False)
 
-    
-    print("\n🔍 Gerando explicação...")
+
+    print("\n Gerando explicação ...")
     start_time = time.time()
     explanation, k = explainer.find_most_anchored_explanation(
         x_idx, X_binary, y_pred, reference_indices, timeout=20
@@ -51,8 +52,8 @@ def test_single_instance():
         print(f"→ Número de âncoras (k): {k}")
         print(f"→ Termo (índices das features): {explanation}")
 
-        # Opcional: mostra nomes das features
-        print("\n📋 Features envolvidas na explicação:")
+        #mostra os nomes das features
+        print("\n Features envolvidas na explicação:")
         for i in explanation:
             print(f"  - {i}: {data.feature_names[i]}")
 
